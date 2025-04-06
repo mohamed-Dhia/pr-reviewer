@@ -161,6 +161,10 @@ Format your response in Markdown."""
         print(f"Error generating review: {e}")
         return f"I encountered an error while reviewing this PR. Error details: {str(e)}"
 
+@app.route('/api/hello', methods=['GET'])
+def hello():
+    return Response("hello", status=200)
+
 @app.route('/api/webhook', methods=['POST'])
 def webhook_handler():
     """Handle GitHub webhooks - this is the main Vercel function"""
