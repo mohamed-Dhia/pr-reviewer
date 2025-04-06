@@ -161,7 +161,7 @@ Format your response in Markdown."""
         print(f"Error generating review: {e}")
         return f"I encountered an error while reviewing this PR. Error details: {str(e)}"
 
-@app.route('/api/hello', methods=['GET'])
+@app.route('/', methods=['GET'])
 def hello():
     return Response("hello", status=200)
 
