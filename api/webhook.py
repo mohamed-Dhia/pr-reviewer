@@ -210,7 +210,7 @@ Do not make specific line-by-line comments in this summary as those will be hand
         return f"I encountered an error while reviewing this PR. Error details: {str(e)}"
 
 def analyze_file_for_comments(file_data):
-    """Analyze a single file and generate specific line comments"""
+    """Analyze a single file and generate specific line comments with GitHub change suggestions"""
     filename = file_data.get("filename")
     patch = file_data.get("patch", "")
     
@@ -228,7 +228,8 @@ File changes:
 
 Your task is to identify specific lines of code that could benefit from comments. For each issue you find, provide:
 1. The exact line of code (just the code itself, unchanged)
-2. Your comment about that line, including suggestions for improvement if applicable
+2. Your comment about that line, including suggestions for improvement
+3. A suggested code replacement when applicable
 
 Only comment on the most important issues (maximum 3-5 comments per file). Focus on:
 - Potential bugs or errors
@@ -237,22 +238,26 @@ Only comment on the most important issues (maximum 3-5 comments per file). Focus
 - Code readability or maintainability
 - Best practices violations
 
+When suggesting code changes, ensure they're complete replacements for the line mentioned, and make sure they're valid syntax.
+
 Format your response as JSON like this:
 [
   {{
     "line": "the exact code line",
-    "comment": "your detailed comment and suggestion"
+    "comment": "your detailed comment explaining the issue",
+    "suggestion": "the improved code that should replace the original line"
   }},
   ...
 ]
 
+If you don't have a specific code suggestion, omit the 'suggestion' field.
 If there are no issues worth commenting on, return an empty array: []"""
 
     try:
         response = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",  # Use your preferred Claude model
             max_tokens=4000,
-            system="You are an expert code reviewer focusing on specific code details.",
+            system="You are an expert code reviewer focusing on specific code details. When suggesting improvements, provide concrete code examples.",
             messages=[
                 {"role": "user", "content": [{"type": "text", "text": prompt}]}
             ]
@@ -260,7 +265,6 @@ If there are no issues worth commenting on, return an empty array: []"""
         
         # Parse the JSON response
         content = response.content[0].text
-        print(content)
         
         # Extract JSON data - find content between square brackets
         json_match = re.search(r'\[\s*\{.*\}\s*\]', content, re.DOTALL)
@@ -286,7 +290,7 @@ If there are no issues worth commenting on, return an empty array: []"""
         return []
 
 def format_line_comments_for_github(repo_full_name, pr_number, token, file_comments):
-    """Convert our internal comment format to GitHub's expected format"""
+    """Convert our internal comment format to GitHub's expected format with change suggestions"""
     github_comments = []
     
     # Get PR files to map line numbers
@@ -299,15 +303,21 @@ def format_line_comments_for_github(repo_full_name, pr_number, token, file_comme
         for comment_data in comments:
             line_content = comment_data.get("line", "").strip()
             comment_body = comment_data.get("comment", "")
+            suggestion = comment_data.get("suggestion", "")
             
             # Find the line number in the patch
             line_number = extract_line_number_from_patch(patch, line_content)
             
             if line_number:
+                # Format comment with GitHub suggestion syntax if a suggestion is provided
+                formatted_comment = comment_body
+                if suggestion:
+                    formatted_comment += f"\n\n```suggestion\n{suggestion}\n```"
+                
                 github_comments.append({
                     "path": filename,
                     "line": line_number, 
-                    "body": comment_body
+                    "body": formatted_comment
                 })
     
     return github_comments
