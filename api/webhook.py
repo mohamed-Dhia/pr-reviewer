@@ -146,6 +146,7 @@ Please provide a thorough review that includes:
 
 Format your response in Markdown."""
 
+    print(prompt)
     try:
         response = anthropic_client.messages.create(
             model="claude-3-5-haiku-20240307",  # Use your preferred Claude model
@@ -155,7 +156,7 @@ Format your response in Markdown."""
                 {"role": "user", "content": prompt}
             ]
         )
-        
+        print(response.content[0].text)
         return response.content[0].text
     except Exception as e:
         print(f"Error generating review: {e}")
@@ -168,6 +169,7 @@ def hello():
 @app.route('/api/webhook', methods=['POST'])
 def webhook_handler():
     """Handle GitHub webhooks - this is the main Vercel function"""
+    print("handling webhook request")
     # Verify signature
     signature = request.headers.get('X-Hub-Signature-256')
     if not verify_webhook(request.data, signature):
