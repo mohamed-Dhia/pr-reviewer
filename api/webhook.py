@@ -160,6 +160,7 @@ Format your response in Markdown."""
         return response.content[0].text
     except Exception as e:
         print(f"Error generating review: {e}")
+        print(f"Response content: {response.content if 'response' in locals() else 'No response'}")
         return f"I encountered an error while reviewing this PR. Error details: {str(e)}"
 
 @app.route('/', methods=['GET'])
